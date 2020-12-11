@@ -4,12 +4,17 @@ const sharp = require('sharp');
 const User = require('../models/user');
 const auth = require('../middleware/auth');
 const router = new express.Router();
+const {
+  sendWelcomeEmail,
+  sendCancellationEmail,
+} = require('../emails/account');
 
 router.post('/users', async (req, res) => {
   const user = new User(req.body);
 
   try {
     await user.save();
+    sendWelcomeEmail(user.email, user.name);
     const token = await user.genAuthToken();
     res.status(201).send({ user, token });
   } catch (e) {
@@ -79,6 +84,7 @@ router.delete('/users/me', auth, async (req, res) => {
   try {
     await req.user.remove();
     res.send(req.user);
+    sendCancellationEmail(req.user.email, req.user.name);
   } catch (e) {
     res.status(500).send(e);
   }
@@ -124,7 +130,7 @@ router.get('/users/:id/avatar', async (req, res) => {
       throw new Error();
     }
 
-    res.set('Content-Type', 'image/png');
+    res.set('Content-Type', 'image/pngg');
     res.send(user.avatar);
   } catch (e) {
     res.status(404).send();
